@@ -3,6 +3,7 @@ import { Form, Button } from 'react-bootstrap';
 import csc from 'country-state-city';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import { BASE_API_URL } from '../utils/constants';
 
 const ThirdStep = (props) => {
@@ -83,16 +84,51 @@ const ThirdStep = (props) => {
         };
 
         getCities();
-    }, [selectedState]);
+    }, [selectedCountry, selectedState]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        try {
+            const { user } = props;
+            const updatedData = {
+                country: countries.find(
+                    (country) => country.isoCode === selectedCountry
+                )?.name,
+                state:
+                    states.find((state) => state.isoCode === selectedState)?.name || '',
+                city: selectedCity
+            };
+
+            await axios.post(`${BASE_API_URL}/register`, {
+                ...user,
+                ...updatedData
+            });
+
+            Swal.fire('Awesome!', "You're successfully registered!", 'success').then(
+                (result) => {
+                    if (result.isConfirmed || result.isDismissed) {
+                        props.resetUser();
+                        props.history.push('/');
+                    }
+                }
+            );
+        } catch (error) {
+            if (error.response) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: error.response.data
+                });
+                console.log('error', error.response.data);
+            }
+        }
     };
 
     return (
         <>
             <Form className="input-form" onSubmit={handleSubmit}>
-                <motion.div 
+                <motion.div
                     className="col-md-6 offset-md-3"
                     initial={{ x: '-100vw' }}
                     animate={{ x: 0 }}
